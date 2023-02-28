@@ -34,19 +34,34 @@ def is_valid_prompt(prompt: str) -> bool:
     Checks if the prompt is valid. A prompt is valid if it is similar to any of the prompts in the training database.
     """
     prompt_embedding = calculate_prompt_embedding(prompt)
+    similarity_treshold = 0.85
     for response in training_db.all():
         response_embedding = calculate_prompt_embedding(response["prompt"])
         similarity = calculate_similarity(prompt_embedding, response_embedding)
-        print(similarity)
-        if similarity > 0.80:
+        print(f"Similarity: {similarity}")
+        if similarity > similarity_treshold:
             return True
     return False
+
+def is_safe_prompt(prompt: str) -> bool:
+    """  
+    Checks if the prompt is safe. A prompt is safe if it is not flagged by the OpenAI moderation model.
+    """
+    response = openai.Moderation.create(
+        input=prompt,
+        model="text-moderation-latest"
+    )
+    is_flagged = response["results"][0]["flagged"]
+    print(f"Is flagged: {is_flagged}")
+    return not is_flagged
 
 @app.get("/completion", status_code=status.HTTP_200_OK)
 async def request_completion(prompt: str):
     """
     Returns a completion for the given prompt. The completion is stored in the database for future reference.
     """
+    if not is_safe_prompt(prompt):
+        return {"text": "Unsafe prompt", "id": None}
     if not is_valid_prompt(prompt):
         return {"text": "Invalid prompt", "id": None}
     response = openai.Completion.create(
