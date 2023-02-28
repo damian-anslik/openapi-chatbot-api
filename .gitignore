@@ -1,5 +1,5 @@
-*.json
+db.json
+contributors.json
 .venv
-.space
 *.pyc
 *cache*
