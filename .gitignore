@@ -1,0 +1,5 @@
+*.json
+.venv
+.space
+*.pyc
+*cache*
